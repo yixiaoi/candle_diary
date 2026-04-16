@@ -2,26 +2,31 @@ import React, { useEffect, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 
 const FIELD_LIMITS = {
-  date: 16,
-  time: 12,
-  place: 18,
-  ritualName: 28,
-  objective: 56,
-  candleDetail1: 24,
-  candleDetail2: 24,
-  color: 16,
-  conditionExtra: 24,
-  additionalObservation1: 28,
-  additionalObservation2: 28,
-  keySign1: 18,
-  keySign2: 18,
-  keySign3: 18,
-  interpretation: 110,
-  review1: 28,
-  review2: 28,
+  date: 30,
+  time: 30,
+  place: 30,
+  ritualName: 30,
+  objective: 120,
+  candleDetail1: 60,
+  candleDetail2: 60,
+  color: 30,
+  conditionExtra: 30,
+  phase2Extra: 30,
+  phase3Extra: 30,
+  phase4Extra: 30,
+  phase5Extra: 30,
+  phase6Extra: 30,
+  additionalObservation1: 90,
+  additionalObservation2: 90,
+  keySign1: 30,
+  keySign2: 30,
+  keySign3: 30,
+  interpretation: 120,
+  review1: 60,
+  review2: 60,
   review3: 28,
   review4: 28,
-  note1: 28,
+  note1: 90,
   note2: 28,
 };
 
@@ -35,6 +40,11 @@ const TEXT_FIELDS = {
   candleDetail2: '',
   color: '',
   conditionExtra: '',
+  phase2Extra: '',
+  phase3Extra: '',
+  phase4Extra: '',
+  phase5Extra: '',
+  phase6Extra: '',
   additionalObservation1: '',
   additionalObservation2: '',
   keySign1: '',
@@ -113,27 +123,72 @@ const LineTextarea = ({
   value,
   onChange,
   maxLength,
-  rows = 3,
+  maxLines = 3,
+  mobileMaxLines,
   placeholder,
   className = '',
-}) => (
-  <label className={`line-field ${className}`.trim()}>
-    {label ? <span className="field-label">{label}</span> : null}
-    <span className="textarea-shell">
-      <textarea
-        className="line-textarea"
-        value={value}
-        onChange={onChange}
-        maxLength={maxLength}
-        rows={rows}
-        placeholder={placeholder}
-      />
-      <span className="field-counter">
-        {value.length}/{maxLength}
+}) => {
+  const textareaRef = useRef(null);
+
+  const handleChange = (event) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const originalValue = textarea.value;
+    let nextValue = event.target.value.replace(/\n+/g, ' ').slice(0, maxLength);
+
+    const computed = window.getComputedStyle(textarea);
+    const lineHeight = parseFloat(computed.lineHeight) || 24;
+    const paddingTop = parseFloat(computed.paddingTop) || 0;
+    const paddingBottom = parseFloat(computed.paddingBottom) || 0;
+    const activeMaxLines =
+      mobileMaxLines && window.matchMedia('(max-width: 899px)').matches ? mobileMaxLines : maxLines;
+    const fallbackMaxHeight = lineHeight * activeMaxLines + paddingTop + paddingBottom;
+    const maxHeight = textarea.clientHeight || fallbackMaxHeight;
+
+    textarea.value = nextValue;
+
+    while (textarea.scrollHeight > maxHeight + 1 && nextValue.length > 0) {
+      nextValue = nextValue.slice(0, -1);
+      textarea.value = nextValue;
+    }
+
+    textarea.value = originalValue;
+
+    onChange({
+      ...event,
+      target: {
+        ...event.target,
+        value: nextValue,
+      },
+    });
+  };
+
+  return (
+    <label className={`line-field ${className}`.trim()}>
+      {label ? <span className="field-label">{label}</span> : null}
+      <span className="textarea-shell">
+        <textarea
+          ref={textareaRef}
+          className="line-textarea"
+          value={value}
+          onChange={handleChange}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+            }
+          }}
+          maxLength={maxLength}
+          rows={maxLines}
+          placeholder={placeholder}
+        />
+        <span className="field-counter">
+          {value.length}/{maxLength}
+        </span>
       </span>
-    </span>
-  </label>
-);
+    </label>
+  );
+};
 
 const ChoiceGroup = ({
   label,
@@ -185,6 +240,59 @@ const waitForPaint = () =>
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   });
 
+const logExportMetrics = ({
+  label,
+  sourceNode,
+  exportClone,
+  exportWidth,
+  exportHeight,
+  pixelRatio,
+  canvasWidth,
+  canvasHeight,
+}) => {
+  const singlePageScale = Math.min(1, exportHeight / exportClone.scrollHeight);
+  const overflowPixels = Math.max(0, exportClone.scrollHeight - exportHeight);
+  const blockMetrics = Array.from(exportClone.querySelectorAll('[data-export-block]')).map((block) => ({
+    block: block.getAttribute('data-export-block'),
+    clientHeight: block.clientHeight,
+    scrollHeight: block.scrollHeight,
+  }));
+
+  console.group(`[Export Diagnostics] ${label}`);
+  console.log('paper element clientWidth / clientHeight', {
+    clientWidth: sourceNode.clientWidth,
+    clientHeight: sourceNode.clientHeight,
+  });
+  console.log('paper element scrollWidth / scrollHeight', {
+    scrollWidth: sourceNode.scrollWidth,
+    scrollHeight: sourceNode.scrollHeight,
+  });
+  console.log('export clone clientWidth / clientHeight', {
+    clientWidth: exportClone.clientWidth,
+    clientHeight: exportClone.clientHeight,
+  });
+  console.log('export clone scrollWidth / scrollHeight', {
+    scrollWidth: exportClone.scrollWidth,
+    scrollHeight: exportClone.scrollHeight,
+  });
+  console.log('final exportWidth / exportHeight', {
+    exportWidth,
+    exportHeight,
+  });
+  console.log('final canvasWidth / canvasHeight', {
+    canvasWidth,
+    canvasHeight,
+  });
+  console.log('window.devicePixelRatio', window.devicePixelRatio);
+  console.log('single-page fit analysis', {
+    overflowPixels,
+    recommendedScale: Number(singlePageScale.toFixed(4)),
+    recommendedPercent: `${Math.round(singlePageScale * 100)}%`,
+  });
+  console.table(blockMetrics);
+  console.groupEnd();
+};
+
 const App = () => {
   const [fields, setFields] = useState(TEXT_FIELDS);
   const [multiSelect, setMultiSelect] = useState(MULTI_DEFAULTS);
@@ -194,6 +302,7 @@ const App = () => {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
   const paperRef = useRef(null);
+  const diagnosticRef = useRef(null);
 
   const updateField = (key) => (event) => {
     setFields((prev) => ({ ...prev, [key]: event.target.value }));
@@ -216,23 +325,70 @@ const App = () => {
     }));
   };
 
-  const exportToPng = async () => {
-    const node = paperRef.current;
+  const exportNodeToPng = async (node, label = 'candle-record') => {
     if (!node || isExporting) return;
 
     setIsExporting(true);
     await waitForPaint();
 
     try {
+      const exportWidth = 1080;
+      const exportHeight = Math.round(exportWidth * 1.414);
+      const exportHost = document.createElement('div');
+      exportHost.style.position = 'fixed';
+      exportHost.style.inset = '0';
+      exportHost.style.opacity = '0';
+      exportHost.style.pointerEvents = 'none';
+      exportHost.style.overflow = 'hidden';
+      exportHost.style.zIndex = '-1';
+      exportHost.style.background = 'transparent';
+
+      const exportClone = node.cloneNode(true);
+      exportClone.classList.add('export-mode');
+      exportClone.style.position = 'absolute';
+      exportClone.style.left = '0';
+      exportClone.style.top = '0';
+      exportClone.style.width = `${exportWidth}px`;
+      exportClone.style.height = `${exportHeight}px`;
+      exportClone.style.minHeight = `${exportHeight}px`;
+      exportClone.style.margin = '0';
+      exportClone.style.pointerEvents = 'none';
+      exportClone.style.overflow = 'hidden';
+      exportHost.appendChild(exportClone);
+      document.body.appendChild(exportHost);
+
       const pixelRatio = Math.min(3, Math.max(2, window.devicePixelRatio || 2));
-      const dataUrl = await toPng(node, {
-        cacheBust: true,
+      let dataUrl = '';
+      const canvasWidth = exportWidth * pixelRatio;
+      const canvasHeight = exportHeight * pixelRatio;
+
+      logExportMetrics({
+        label,
+        sourceNode: node,
+        exportClone,
+        exportWidth,
+        exportHeight,
         pixelRatio,
-        backgroundColor: '#f9f6f0',
-        style: {
-          margin: '0',
-        },
+        canvasWidth,
+        canvasHeight,
       });
+
+      try {
+        dataUrl = await toPng(exportClone, {
+          cacheBust: true,
+          pixelRatio,
+          backgroundColor: '#f9f6f0',
+          width: exportWidth,
+          height: exportHeight,
+          canvasWidth,
+          canvasHeight,
+          style: {
+            margin: '0',
+          },
+        });
+      } finally {
+        exportHost.remove();
+      }
 
       const link = document.createElement('a');
       const isTouchDevice =
@@ -242,7 +398,7 @@ const App = () => {
       if (isTouchDevice) {
         setPreviewImage(dataUrl);
       } else {
-        link.download = `ritual-record-${fields.date || 'export'}.png`;
+        link.download = `${label}-${fields.date || 'export'}.png`;
         link.href = dataUrl;
         link.click();
       }
@@ -252,6 +408,10 @@ const App = () => {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const exportToPng = async () => {
+    await exportNodeToPng(paperRef.current, 'candle-record');
   };
 
   useEffect(() => {
@@ -284,12 +444,34 @@ const App = () => {
     setPreviewImage('');
   };
 
+  const clearAll = () => {
+    const confirmed = window.confirm('确定要清空当前填写内容和勾选状态吗？');
+    if (!confirmed) return;
+
+    setFields({ ...TEXT_FIELDS });
+    setMultiSelect({ ...MULTI_DEFAULTS });
+    setSingleSelect({ ...SINGLE_DEFAULTS });
+    setPreviewImage('');
+    setActiveSection('top');
+  };
+
   return (
     <div className="app-shell">
       <div className="toolbar">
         <div>
-          <p className="toolbar-kicker">Candle Record</p>
-          <h1 className="toolbar-title">Editable archive sheet</h1>
+          <p className="toolbar-kicker">蜡烛记录 / Candle Record</p>
+          <h1 className="toolbar-title">
+            喜欢的话可以到我的小红书
+            <a
+              className="toolbar-link"
+              href="https://xhslink.com/m/7d26IkR5FoA"
+              target="_blank"
+              rel="noreferrer"
+            >
+              @UMchinnn🦋
+            </a>
+            点个赞，上面会有更多的工具发布
+          </h1>
         </div>
         <div className="toolbar-actions">
           <div className="mobile-jump" aria-label="Mobile section navigation">
@@ -308,8 +490,11 @@ const App = () => {
               </button>
             ))}
           </div>
+          <button type="button" className="export-button secondary-button" onClick={clearAll} disabled={isExporting}>
+            一键清空 / Clear
+          </button>
           <button type="button" className="export-button" onClick={exportToPng} disabled={isExporting}>
-            {isExporting ? 'Exporting…' : 'Export PNG'}
+            {isExporting ? '导出中… / Exporting…' : '导出 PNG / Export PNG'}
           </button>
         </div>
       </div>
@@ -321,35 +506,38 @@ const App = () => {
       >
         <div className="paper-texture" />
 
-        <header className="paper-header" data-mobile-section="top">
+        <header className="paper-header" data-mobile-section="top" data-export-block="header">
           <div className="paper-title-group">
-            <p className="paper-kicker">Private Archive</p>
-            <h2 className="paper-title">Candle Record</h2>
-            <p className="paper-subtitle">Archive / Private Observation</p>
+            <p className="paper-kicker">观察存档</p>
+            <h2 className="paper-title paper-title-cn">蜡烛观察记录</h2>
+            <p className="paper-subtitle">模板与网页来自umi</p>
           </div>
         </header>
 
-        <section className="top-grid surface-block" data-mobile-section="top">
+        <section className="top-grid surface-block" data-mobile-section="top" data-export-block="top-grid">
           <div className="info-column info-column-left info-column-border">
             <LineInput
-              label="Date"
+              label="日期 / Date"
               value={fields.date}
               onChange={updateField('date')}
               maxLength={FIELD_LIMITS.date}
+              className="font-date"
               dense
             />
             <LineInput
-              label="Time"
+              label="时间 / Time"
               value={fields.time}
               onChange={updateField('time')}
               maxLength={FIELD_LIMITS.time}
+              className="font-time"
               dense
             />
             <LineInput
-              label="Place"
+              label="地点 / Place"
               value={fields.place}
               onChange={updateField('place')}
               maxLength={FIELD_LIMITS.place}
+              className="font-place"
               dense
             />
             <LineInput
@@ -357,6 +545,7 @@ const App = () => {
               value={fields.ritualName}
               onChange={updateField('ritualName')}
               maxLength={FIELD_LIMITS.ritualName}
+              className="font-ritual"
             />
           </div>
 
@@ -366,24 +555,31 @@ const App = () => {
               value={fields.objective}
               onChange={updateField('objective')}
               maxLength={FIELD_LIMITS.objective}
-              rows={4}
+              maxLines={4}
+              mobileMaxLines={8}
+              className="objective-field"
             />
-            <LineInput
+            <LineTextarea
               label="Candle Details / 蜡烛补充信息"
-              value={fields.candleDetail1}
-              onChange={updateField('candleDetail1')}
-              maxLength={FIELD_LIMITS.candleDetail1}
-            />
-            <LineInput
-              value={fields.candleDetail2}
-              onChange={updateField('candleDetail2')}
-              maxLength={FIELD_LIMITS.candleDetail2}
+              value={fields.candleDetail1 + (fields.candleDetail2 ? ` ${fields.candleDetail2}` : '')}
+              onChange={(event) => {
+                const value = event.target.value;
+                setFields((prev) => ({
+                  ...prev,
+                  candleDetail1: value,
+                  candleDetail2: '',
+                }));
+              }}
+              maxLength={60}
+              maxLines={2}
+              mobileMaxLines={4}
+              className="details-field"
             />
           </div>
 
           <div className="info-column info-column-right">
             <LineInput
-              label="Color"
+              label="颜色 / Color"
               value={fields.color}
               onChange={updateField('color')}
               maxLength={FIELD_LIMITS.color}
@@ -419,7 +615,7 @@ const App = () => {
 
         <div className="middle-grid">
           <div className="column-stack column-stack-left">
-            <section className="surface-block phase-block phase-block-open" data-mobile-section="phase1">
+            <section className="surface-block phase-block phase-block-open" data-mobile-section="phase1" data-export-block="phase-01">
               <SectionTitle en="Phase 01" cn="状态与准备" />
               <ChoiceGroup
                 label="Condition / 状态"
@@ -435,7 +631,6 @@ const App = () => {
                 onChange={(value) => toggleMulti('condition', value)}
               />
               <LineInput
-                label="Additional State"
                 value={fields.conditionExtra}
                 onChange={updateField('conditionExtra')}
                 maxLength={FIELD_LIMITS.conditionExtra}
@@ -447,13 +642,14 @@ const App = () => {
                 items={[
                   { label: '保护', value: 'protection' },
                   { label: '清理', value: 'cleansing' },
+                  { label: '冥想', value: 'meditation' },
                 ]}
                 selected={multiSelect.prep}
                 onChange={(value) => toggleMulti('prep', value)}
               />
             </section>
 
-            <section className="surface-block phase-block phase-block-dense" data-mobile-section="phase2">
+            <section className="surface-block phase-block phase-block-dense" data-mobile-section="phase2" data-export-block="phase-02">
               <SectionTitle en="Phase 02" cn="火焰动态" />
               <ChoiceGroup
                 label="Ignition / 点燃"
@@ -481,7 +677,7 @@ const App = () => {
               />
               <div className="two-up">
                 <ChoiceGroup
-                  label="Height"
+                  label="高度 / Height"
                   type="single"
                   compact
                   items={[
@@ -493,7 +689,7 @@ const App = () => {
                   onChange={(value) => toggleSingle('flameHeight', value)}
                 />
                 <ChoiceGroup
-                  label="Stability"
+                  label="稳定 / Stability"
                   type="single"
                   compact
                   items={[
@@ -504,12 +700,17 @@ const App = () => {
                   onChange={(value) => toggleSingle('flameStability', value)}
                 />
               </div>
+              <LineInput
+                value={fields.phase2Extra}
+                onChange={updateField('phase2Extra')}
+                maxLength={FIELD_LIMITS.phase2Extra}
+              />
             </section>
 
-            <section className="surface-block phase-block phase-block-light" data-mobile-section="phase3">
+            <section className="surface-block phase-block phase-block-light" data-mobile-section="phase3" data-export-block="phase-03">
               <SectionTitle en="Phase 03" cn="烟雾与气味" />
               <ChoiceGroup
-                label="Smoke"
+                label="烟雾 / Smoke"
                 type="single"
                 compact
                 items={[
@@ -534,11 +735,16 @@ const App = () => {
                 selected={multiSelect.smokeDirection}
                 onChange={(value) => toggleMulti('smokeDirection', value)}
               />
+              <LineInput
+                value={fields.phase3Extra}
+                onChange={updateField('phase3Extra')}
+                maxLength={FIELD_LIMITS.phase3Extra}
+              />
             </section>
           </div>
 
           <div className="column-stack column-stack-right column-divider">
-            <section className="surface-block phase-block phase-block-anchor" data-mobile-section="phase4">
+            <section className="surface-block phase-block phase-block-anchor" data-mobile-section="phase4" data-export-block="phase-04">
               <SectionTitle en="Phase 04" cn="蜡液观察" />
               <ChoiceGroup
                 label="Flow / 蜡流方向"
@@ -568,9 +774,14 @@ const App = () => {
                 selected={multiSelect.waxShapes}
                 onChange={(value) => toggleMulti('waxShapes', value)}
               />
+              <LineInput
+                value={fields.phase4Extra}
+                onChange={updateField('phase4Extra')}
+                maxLength={FIELD_LIMITS.phase4Extra}
+              />
             </section>
 
-            <section className="surface-block phase-block phase-block-compact" data-mobile-section="phase5">
+            <section className="surface-block phase-block phase-block-compact" data-mobile-section="phase5" data-export-block="phase-05">
               <SectionTitle en="Phase 05" cn="烛芯特征" />
               <ChoiceGroup
                 label="Wick / 烛芯"
@@ -585,12 +796,17 @@ const App = () => {
                 selected={multiSelect.wickTraits}
                 onChange={(value) => toggleMulti('wickTraits', value)}
               />
+              <LineInput
+                value={fields.phase5Extra}
+                onChange={updateField('phase5Extra')}
+                maxLength={FIELD_LIMITS.phase5Extra}
+              />
             </section>
 
-            <section className="surface-block phase-block phase-block-anchor" data-mobile-section="phase6">
+            <section className="surface-block phase-block phase-block-anchor" data-mobile-section="phase6" data-export-block="phase-06">
               <SectionTitle en="Phase 06" cn="燃烧结果" />
               <ChoiceGroup
-                label="Complete?"
+                label="是否烧完 / Complete?"
                 type="single"
                 compact
                 items={[
@@ -613,45 +829,71 @@ const App = () => {
                 onChange={(value) => toggleMulti('remains', value)}
               />
               <div className="stack-lines">
-                <LineInput
+                <LineTextarea
                   label="Additional Observations / 观察补充"
-                  value={fields.additionalObservation1}
-                  onChange={updateField('additionalObservation1')}
-                  maxLength={FIELD_LIMITS.additionalObservation1}
-                />
-                <LineInput
-                  value={fields.additionalObservation2}
-                  onChange={updateField('additionalObservation2')}
-                  maxLength={FIELD_LIMITS.additionalObservation2}
+                  value={[
+                    fields.additionalObservation1,
+                    fields.additionalObservation2,
+                    fields.note1,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setFields((prev) => ({
+                      ...prev,
+                      additionalObservation1: value,
+                      additionalObservation2: '',
+                      note1: '',
+                    }));
+                  }}
+                  maxLength={90}
+                  maxLines={3}
+                  mobileMaxLines={6}
+                  className="observations-field"
                 />
               </div>
+              <LineInput
+                value={fields.phase6Extra}
+                onChange={updateField('phase6Extra')}
+                maxLength={FIELD_LIMITS.phase6Extra}
+              />
             </section>
           </div>
         </div>
 
-        <section className="summary-section summary-block surface-block" data-mobile-section="synthesis">
+        <section className="summary-section summary-block surface-block" data-mobile-section="synthesis" data-export-block="summary">
           <div className="summary-grid">
             <div className="summary-main">
               <SectionTitle en="Synthesis" cn="综合观察判断" />
               <div className="summary-columns">
                 <div>
                   <p className="summary-label">Key Signs / 核心征象</p>
-                  <div className="stack-lines">
-                    <LineInput
-                      value={fields.keySign1}
-                      onChange={updateField('keySign1')}
-                      maxLength={FIELD_LIMITS.keySign1}
-                    />
-                    <LineInput
-                      value={fields.keySign2}
-                      onChange={updateField('keySign2')}
-                      maxLength={FIELD_LIMITS.keySign2}
-                    />
-                    <LineInput
-                      value={fields.keySign3}
-                      onChange={updateField('keySign3')}
-                      maxLength={FIELD_LIMITS.keySign3}
-                    />
+                  <div className="stack-lines key-signs-lines">
+                    <div className="numbered-line">
+                      <span className="line-index">1</span>
+                      <LineInput
+                        value={fields.keySign1}
+                        onChange={updateField('keySign1')}
+                        maxLength={FIELD_LIMITS.keySign1}
+                      />
+                    </div>
+                    <div className="numbered-line">
+                      <span className="line-index">2</span>
+                      <LineInput
+                        value={fields.keySign2}
+                        onChange={updateField('keySign2')}
+                        maxLength={FIELD_LIMITS.keySign2}
+                      />
+                    </div>
+                    <div className="numbered-line">
+                      <span className="line-index">3</span>
+                      <LineInput
+                        value={fields.keySign3}
+                        onChange={updateField('keySign3')}
+                        maxLength={FIELD_LIMITS.keySign3}
+                      />
+                    </div>
                   </div>
                 </div>
                 <LineTextarea
@@ -659,13 +901,14 @@ const App = () => {
                   value={fields.interpretation}
                   onChange={updateField('interpretation')}
                   maxLength={FIELD_LIMITS.interpretation}
-                  rows={6}
+                  maxLines={4}
+                  mobileMaxLines={8}
                   className="interpretation-field"
                 />
               </div>
             </div>
             <aside className="next-action-box archive-note-box">
-              <p className="next-action-title">Next Action</p>
+              <p className="next-action-title">下一步 / Next Action</p>
               <ChoiceGroup
                 type="multi"
                 compact
@@ -683,57 +926,50 @@ const App = () => {
           </div>
 
           <div className="footer-notes">
-            <div className="notes-block">
+            <div className="notes-block" data-export-block="review">
               <div className="notes-heading">
                 <span>Review / 回溯复盘</span>
                 <span className="notes-rule" />
               </div>
               <div className="stack-lines">
-                <LineInput
-                  value={fields.review1}
-                  onChange={updateField('review1')}
+                <LineTextarea
+                  value={[fields.review1, fields.review2].filter(Boolean).join(' ')}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setFields((prev) => ({
+                      ...prev,
+                      review1: value,
+                      review2: '',
+                    }));
+                  }}
                   maxLength={FIELD_LIMITS.review1}
-                />
-                <LineInput
-                  value={fields.review2}
-                  onChange={updateField('review2')}
-                  maxLength={FIELD_LIMITS.review2}
-                />
-                <LineInput
-                  value={fields.review3}
-                  onChange={updateField('review3')}
-                  maxLength={FIELD_LIMITS.review3}
-                />
-                <LineInput
-                  value={fields.review4}
-                  onChange={updateField('review4')}
-                  maxLength={FIELD_LIMITS.review4}
-                />
-              </div>
-            </div>
-
-            <div className="notes-block">
-              <div className="notes-heading subtle">
-                <span>Other Notes / 其他补充状态</span>
-                <span className="notes-rule" />
-              </div>
-              <div className="stack-lines">
-                <LineInput
-                  value={fields.note1}
-                  onChange={updateField('note1')}
-                  maxLength={FIELD_LIMITS.note1}
-                />
-                <LineInput
-                  value={fields.note2}
-                  onChange={updateField('note2')}
-                  maxLength={FIELD_LIMITS.note2}
+                  maxLines={2}
+                  mobileMaxLines={4}
+                  className="review-field"
                 />
               </div>
             </div>
           </div>
         </section>
 
-        <div className="archive-watermark">Archive</div>
+        <div className="archive-watermark">存档 / Archive</div>
+      </div>
+
+      <div className="diagnostic-stage" aria-hidden="true">
+        <div ref={diagnosticRef} className="diagnostic-sheet">
+          <div className="diagnostic-title-row">
+            <span className="diagnostic-kicker">诊断导出 / Diagnostic Export</span>
+            <span className="diagnostic-note">最小长页测试 / Minimal long-page test</span>
+          </div>
+          <div className="diagnostic-lines">
+            {Array.from({ length: 22 }).map((_, index) => (
+              <div key={index} className="diagnostic-line-group">
+                <div className="diagnostic-label">第 {String(index + 1).padStart(2, '0')} 行 / Line {String(index + 1).padStart(2, '0')}</div>
+                <div className="diagnostic-line" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <button
@@ -742,7 +978,7 @@ const App = () => {
         onClick={scrollToTop}
         aria-label="Back to top"
       >
-        Top
+        顶部 / Top
       </button>
 
       {previewImage ? (
@@ -750,11 +986,11 @@ const App = () => {
           <div className="export-preview-panel">
             <div className="export-preview-head">
               <div>
-                <p className="export-preview-kicker">PNG Preview</p>
+                <p className="export-preview-kicker">图片预览 / PNG Preview</p>
                 <h2 className="export-preview-title">长按图片保存到相册</h2>
               </div>
               <button type="button" className="preview-close" onClick={closePreview} aria-label="Close preview">
-                Close
+                关闭 / Close
               </button>
             </div>
             <div className="export-preview-body">

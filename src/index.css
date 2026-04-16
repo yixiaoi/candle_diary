@@ -220,6 +220,10 @@ button {
   align-items: flex-start;
 }
 
+.toolbar-copy {
+  min-width: 0;
+}
+
 .toolbar-kicker {
   margin: 0 0 4px;
   font-size: 10px;
@@ -247,7 +251,18 @@ button {
   text-decoration: underline;
 }
 
+.toolbar-mobile-note {
+  display: none;
+  margin: 0;
+}
+
 .toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-button-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1086,10 +1101,16 @@ button {
     margin-bottom: 12px;
   }
 
+  .toolbar-copy {
+    margin-top: 0;
+  }
+
+  .toolbar-kicker {
+    display: none;
+  }
+
   .toolbar-title {
-    max-width: none;
-    font-size: 12px;
-    line-height: 1.55;
+    display: none;
   }
 
   .toolbar-link {
@@ -1113,6 +1134,21 @@ button {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(90, 68, 58, 0.08);
     border-radius: 16px;
+  }
+
+  .toolbar-button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .toolbar-mobile-note {
+    display: block;
+    font-size: 10px;
+    line-height: 1.45;
+    color: #6a5049;
+    text-align: left;
   }
 
   .mobile-jump {
@@ -1411,6 +1447,44 @@ button {
   .review-field .line-textarea {
     height: 104px;
     min-height: 104px;
+  }
+
+  .paper-sheet.export-mode .objective-field .line-textarea,
+  .paper-sheet.export-mode .details-field .line-textarea,
+  .paper-sheet.export-mode .observations-field .line-textarea,
+  .paper-sheet.export-mode .interpretation-field .line-textarea,
+  .paper-sheet.export-mode .review-field .line-textarea {
+    border: 0;
+    border-bottom: 1px solid rgba(163, 149, 138, 0.92);
+    border-radius: 0;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(1.6em - 1px),
+      rgba(201, 190, 178, 0.45) calc(1.6em - 1px),
+      rgba(201, 190, 178, 0.45) 1.6em
+    );
+    background-position: 0 1px;
+    background-color: transparent;
+    padding: 4px 28px 4px 0;
+    line-height: 1.6;
+  }
+
+  .paper-sheet.export-mode .objective-field .line-textarea,
+  .paper-sheet.export-mode .interpretation-field .line-textarea {
+    height: 98px;
+    min-height: 98px;
+  }
+
+  .paper-sheet.export-mode .details-field .line-textarea,
+  .paper-sheet.export-mode .review-field .line-textarea {
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .paper-sheet.export-mode .observations-field .line-textarea {
+    height: 72px;
+    min-height: 72px;
   }
 
   .export-preview {

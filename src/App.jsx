@@ -458,7 +458,7 @@ const App = () => {
   return (
     <div className="app-shell">
       <div className="toolbar">
-        <div>
+        <div className="toolbar-copy">
           <p className="toolbar-kicker">蜡烛记录 / Candle Record</p>
           <h1 className="toolbar-title">
             喜欢的话可以到我的小红书
@@ -490,12 +490,26 @@ const App = () => {
               </button>
             ))}
           </div>
-          <button type="button" className="export-button secondary-button" onClick={clearAll} disabled={isExporting}>
-            一键清空 / Clear
-          </button>
-          <button type="button" className="export-button" onClick={exportToPng} disabled={isExporting}>
-            {isExporting ? '导出中… / Exporting…' : '导出 PNG / Export PNG'}
-          </button>
+          <div className="toolbar-button-row">
+            <button type="button" className="export-button secondary-button" onClick={clearAll} disabled={isExporting}>
+              一键清空
+            </button>
+            <button type="button" className="export-button" onClick={exportToPng} disabled={isExporting}>
+              {isExporting ? '保存中…' : '保存图片'}
+            </button>
+          </div>
+          <p className="toolbar-mobile-note">
+            喜欢的话可以到我的小红书
+            <a
+              className="toolbar-link"
+              href="https://xhslink.com/m/7d26IkR5FoA"
+              target="_blank"
+              rel="noreferrer"
+            >
+              @UMchinnn🦋
+            </a>
+            点个赞，上面会有更多的工具发布
+          </p>
         </div>
       </div>
 

@@ -251,21 +251,51 @@ button {
   text-decoration: underline;
 }
 
-.toolbar-mobile-note {
-  display: none;
-  margin: 0;
-}
-
 .toolbar-actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.toolbar-button-row {
+.toolbar-corner-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.button-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.material-symbols-outlined.button-icon {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.button-label {
+  line-height: 1;
 }
 
 .mobile-jump {
@@ -1086,7 +1116,7 @@ button {
 
 @media (max-width: 899px) {
   .app-shell {
-    padding: 108px 14px 14px;
+    padding: 88px 14px 14px;
   }
 
   .back-to-top {
@@ -1097,12 +1127,18 @@ button {
   }
 
   .toolbar {
-    flex-direction: column;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
     margin-bottom: 12px;
   }
 
   .toolbar-copy {
     margin-top: 0;
+    padding-right: 0;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .toolbar-kicker {
@@ -1110,7 +1146,10 @@ button {
   }
 
   .toolbar-title {
-    display: none;
+    display: block;
+    max-width: none;
+    font-size: 10px;
+    line-height: 1.45;
   }
 
   .toolbar-link {
@@ -1124,11 +1163,11 @@ button {
     left: 14px;
     right: 14px;
     width: auto;
-    flex-direction: column;
+    flex-direction: row;
     align-items: stretch;
     z-index: 30;
-    gap: 8px;
-    padding: 10px;
+    gap: 0;
+    padding: 8px 10px;
     background: linear-gradient(180deg, rgba(222, 214, 203, 0.97), rgba(222, 214, 203, 0.88));
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1136,19 +1175,11 @@ button {
     border-radius: 16px;
   }
 
-  .toolbar-button-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    width: 100%;
-  }
-
-  .toolbar-mobile-note {
-    display: block;
-    font-size: 10px;
-    line-height: 1.45;
-    color: #6a5049;
-    text-align: left;
+  .toolbar-corner-actions {
+    position: static;
+    gap: 6px;
+    flex: 0 0 auto;
+    align-self: flex-start;
   }
 
   .mobile-jump {
@@ -1176,10 +1207,18 @@ button {
     font-family: "Georgia", "Times New Roman", serif;
   }
 
-  .export-button {
-    width: 100%;
-    border-radius: 12px;
+  .toolbar-corner-actions .export-button {
+    width: auto;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 7px 8px;
+    border-radius: 999px;
+    font-size: 10px;
     font-family: "Georgia", "Times New Roman", serif;
+  }
+
+  .toolbar-corner-actions .button-label {
+    display: none;
   }
 
   .paper-sheet {

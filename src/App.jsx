@@ -357,7 +357,12 @@ const App = () => {
       exportHost.appendChild(exportClone);
       document.body.appendChild(exportHost);
 
-      const pixelRatio = Math.min(3, Math.max(2, window.devicePixelRatio || 2));
+      const isTouchDevice =
+        window.matchMedia('(pointer: coarse)').matches ||
+        /Android|iPhone|iPad|iPod/i.test(window.navigator.userAgent);
+      const pixelRatio = isTouchDevice
+        ? 1.5
+        : Math.min(3, Math.max(2, window.devicePixelRatio || 2));
       let dataUrl = '';
       const canvasWidth = exportWidth * pixelRatio;
       const canvasHeight = exportHeight * pixelRatio;
@@ -391,9 +396,6 @@ const App = () => {
       }
 
       const link = document.createElement('a');
-      const isTouchDevice =
-        window.matchMedia('(pointer: coarse)').matches ||
-        /Android|iPhone|iPad|iPod/i.test(window.navigator.userAgent);
 
       if (isTouchDevice) {
         setPreviewImage(dataUrl);
@@ -490,26 +492,32 @@ const App = () => {
               </button>
             ))}
           </div>
-          <div className="toolbar-button-row">
-            <button type="button" className="export-button secondary-button" onClick={clearAll} disabled={isExporting}>
-              一键清空
-            </button>
-            <button type="button" className="export-button" onClick={exportToPng} disabled={isExporting}>
-              {isExporting ? '保存中…' : '保存图片'}
-            </button>
-          </div>
-          <p className="toolbar-mobile-note">
-            喜欢的话可以到我的小红书
-            <a
-              className="toolbar-link"
-              href="https://xhslink.com/m/7d26IkR5FoA"
-              target="_blank"
-              rel="noreferrer"
-            >
-              @UMchinnn🦋
-            </a>
-            点个赞，上面会有更多的工具发布
-          </p>
+        </div>
+        <div className="toolbar-corner-actions">
+          <button
+            type="button"
+            className="export-button secondary-button icon-button"
+            onClick={clearAll}
+            disabled={isExporting}
+            aria-label="一键清空"
+            title="一键清空"
+          >
+            <span className="button-icon material-symbols-outlined" aria-hidden="true">delete</span>
+            <span className="button-label">一键清空</span>
+          </button>
+          <button
+            type="button"
+            className="export-button icon-button"
+            onClick={exportToPng}
+            disabled={isExporting}
+            aria-label={isExporting ? '保存中' : '保存图片'}
+            title={isExporting ? '保存中' : '保存图片'}
+          >
+            <span className="button-icon material-symbols-outlined" aria-hidden="true">
+              {isExporting ? 'progress_activity' : 'download'}
+            </span>
+            <span className="button-label">{isExporting ? '保存中…' : '保存图片'}</span>
+          </button>
         </div>
       </div>
 
